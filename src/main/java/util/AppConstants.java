@@ -7,7 +7,6 @@ public final class AppConstants {
     public static final int DEFAULT_PORT = 9999;
     public static final int BUFFER_SIZE = 8192;
 
-    public static final String INPUT_WORKBOOK_FILE = "DULIEUTHI.xlsx";
     public static final String SHEET_CAN_BO = "Danh sách cán bộ";
     public static final String SHEET_PHONG_THI = "DS phong thi";
     public static final String OUTPUT_PHAN_CONG_FILE = "DANHSACHPHANCONG.xlsx";

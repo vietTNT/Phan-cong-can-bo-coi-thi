@@ -69,11 +69,9 @@ public class ClientFrame extends JFrame {
     private final JButton btnConnect = createPrimaryButton("Connect");
     private final JButton btnImportExcel = createOutlineButton("Import Excel vào database");
     private final JButton btnRunAssign = createPrimaryButton("Chạy phân công và xuất Excel");
-    private final JButton btnExportExcel = createOutlineButton("Xuất Excel");
     private final JButton btnOpenOutputFolder = createOutlineButton("Mở thư mục kết quả");
 
     private final ClientSocketService socketService = new ClientSocketService();
-    private List<File> lastResultFiles = List.of();
 
     public ClientFrame() {
         initLookAndFeel();
@@ -85,7 +83,6 @@ public class ClientFrame extends JFrame {
         initComponents();
         registerEvents();
         updateConnectionStatus(false);
-        btnExportExcel.setEnabled(false);
         appendLog("Khởi tạo hệ thống...");
         appendLog("Sẵn sàng thực hiện tác vụ.");
         setLocationRelativeTo(null);
@@ -213,16 +210,13 @@ public class ClientFrame extends JFrame {
         gbc.gridx = 1;
         actionBar.add(btnRunAssign, gbc);
 
-        gbc.gridx = 2;
-        actionBar.add(btnExportExcel, gbc);
-
         JPanel spacer = new JPanel();
         spacer.setOpaque(false);
-        gbc.gridx = 3;
+        gbc.gridx = 2;
         gbc.weightx = 1;
         actionBar.add(spacer, gbc);
 
-        gbc.gridx = 4;
+        gbc.gridx = 3;
         gbc.weightx = 0;
         gbc.insets = new Insets(0, 0, 0, 0);
         actionBar.add(btnOpenOutputFolder, gbc);
@@ -280,7 +274,6 @@ public class ClientFrame extends JFrame {
         btnConnect.addActionListener(event -> connect());
         btnImportExcel.addActionListener(event -> importExcelToDatabase());
         btnRunAssign.addActionListener(event -> assign());
-        btnExportExcel.addActionListener(event -> exportExcel());
         btnOpenOutputFolder.addActionListener(event -> openDownloadFolder());
     }
 
@@ -411,12 +404,10 @@ public class ClientFrame extends JFrame {
                 setBusy(false, "Sẵn sàng");
                 try {
                     AssignmentResponse response = get();
-                    lastResultFiles = response.getFiles();
                     lblCaThiAuto.setText(response.getTenCaThi());
                     lblCaThiAuto.setForeground(SUCCESS);
-                    btnExportExcel.setEnabled(true);
                     appendLog("Tên ca thi: " + response.getTenCaThi());
-                    appendResultFiles(lastResultFiles);
+                    appendResultFiles(response.getFiles());
                 } catch (Exception exception) {
                     String message = getErrorMessage(exception);
                     appendLog("Lỗi phân công: " + message);
@@ -430,17 +421,6 @@ public class ClientFrame extends JFrame {
             }
         };
         worker.execute();
-    }
-
-    private void exportExcel() {
-        if (lastResultFiles.isEmpty()) {
-            appendLog("Chưa có file Excel kết quả để xuất.");
-            JOptionPane.showMessageDialog(this, "Chưa có file Excel kết quả.", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-
-        appendLog("File Excel đã được xuất trong thư mục kết quả.");
-        openDownloadFolder();
     }
 
     private void openDownloadFolder() {

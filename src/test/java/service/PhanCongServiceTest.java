@@ -7,7 +7,10 @@ import model.PhanCong;
 import model.PhongThi;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.HashSet;
 import java.util.List;
@@ -78,6 +81,18 @@ class PhanCongServiceTest {
     }
 
     @Test
+    void supervisorRoomSelectionAvoidsRoomsTheyInvigilatedBefore() throws Exception {
+        CanBo canBo = createCanBo(1).get(0);
+        List<PhongThi> phongThi = createPhongThi(2);
+        AssignmentHistory history = new AssignmentHistory();
+        history.addCanBoPhong("CB1", "C001");
+
+        PhongThi selectedRoom = chooseSupervisorRoom(canBo, phongThi, new HashSet<>(), history);
+
+        assertEquals("C002", selectedRoom.getPhongThi());
+    }
+
+    @Test
     void manySupervisorsAreAssignedUpToTwoPerRoomWithoutEmptyWork() {
         PhanCongService.AssignmentResult result = service.phanCong(createCanBo(16), createPhongThi(5), new AssignmentHistory());
 
@@ -94,6 +109,18 @@ class PhanCongServiceTest {
     }
 
     @Test
+    void supervisorRoomSelectionWithCapacityAvoidsRoomsTheyInvigilatedBefore() throws Exception {
+        CanBo canBo = createCanBo(1).get(0);
+        List<PhongThi> phongThi = createPhongThi(2);
+        AssignmentHistory history = new AssignmentHistory();
+        history.addCanBoPhong("CB1", "C001");
+
+        PhongThi selectedRoom = chooseSupervisorRoomWithCapacity(canBo, phongThi, new HashMap<>(), history);
+
+        assertEquals("C002", selectedRoom.getPhongThi());
+    }
+
+    @Test
     void manySupervisorsCanExceedTwoPerRoomWhenNoLimitConfigured() {
         PhanCongService.AssignmentResult result = service.phanCong(createCanBo(22), createPhongThi(5), new AssignmentHistory());
 
@@ -106,6 +133,48 @@ class PhanCongServiceTest {
                         Collectors.counting()
                 ));
         assertTrue(supervisorsByRoom.values().stream().anyMatch(count -> count > 2));
+    }
+
+    private PhongThi chooseSupervisorRoom(CanBo canBo,
+                                          List<PhongThi> rooms,
+                                          Set<String> assignedRoomThisAttempt,
+                                          AssignmentHistory history) throws Exception {
+        Method method = PhanCongService.class.getDeclaredMethod(
+                "chooseSupervisorRoom",
+                CanBo.class,
+                List.class,
+                Set.class,
+                AssignmentHistory.class
+        );
+        method.setAccessible(true);
+        return invokeRoomSelection(method, canBo, rooms, assignedRoomThisAttempt, history);
+    }
+
+    private PhongThi chooseSupervisorRoomWithCapacity(CanBo canBo,
+                                                      List<PhongThi> rooms,
+                                                      Map<String, Integer> supervisorCountByRoom,
+                                                      AssignmentHistory history) throws Exception {
+        Method method = PhanCongService.class.getDeclaredMethod(
+                "chooseSupervisorRoomWithCapacity",
+                CanBo.class,
+                List.class,
+                Map.class,
+                AssignmentHistory.class
+        );
+        method.setAccessible(true);
+        return invokeRoomSelection(method, canBo, rooms, supervisorCountByRoom, history);
+    }
+
+    private PhongThi invokeRoomSelection(Method method, Object... args) throws Exception {
+        try {
+            return (PhongThi) method.invoke(service, args);
+        } catch (InvocationTargetException exception) {
+            Throwable cause = exception.getCause();
+            if (cause instanceof Exception nestedException) {
+                throw nestedException;
+            }
+            throw exception;
+        }
     }
 
     private List<CanBo> createCanBo(int count) {
