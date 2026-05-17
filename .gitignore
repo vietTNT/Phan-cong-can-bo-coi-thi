@@ -1,0 +1,6 @@
+target/
+client_downloads/
+server_uploads/
+server_outputs/
+*.log
+*.tmp
